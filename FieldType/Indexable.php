@@ -9,7 +9,7 @@
 
 namespace eZ\Publish\SPI\FieldType;
 
-use eZ\Publish\API\Repository\Values\Content\Field;
+use eZ\Publish\SPI\Persistence\Content\Field;
 
 /**
  * The field type interface which all field types have to implement to be
