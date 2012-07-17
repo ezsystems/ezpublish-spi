@@ -12,14 +12,13 @@ use eZ\Publish\Core\Persistence\Legacy,
     eZ\Publish\Core\FieldType,
     eZ\Publish\SPI\Persistence\Content,
     eZ\Publish\SPI\Persistence\Content\Field,
-    eZ\Publish\SPI\Persistence\Content\FieldTypeConstraints,
-    eZ\Publish\SPI\Persistence\User;
+    eZ\Publish\SPI\Persistence\Content\FieldTypeConstraints;
 
 /**
  * Integration test for legacy storage field types
  *
  * This abstract base test case is supposed to be the base for field type
- * integration tests. It basically calls all involved methods in the field type
+ * integration tests. It basically calls all involved methods in the field type 
  * ``Converter`` and ``Storage`` implementations. Fo get it working implement
  * the abstract methods in a sensible way.
  *
@@ -35,7 +34,7 @@ use eZ\Publish\Core\Persistence\Legacy,
  *
  * @group integration
  */
-class UserIntergrationTest extends BaseIntegrationTest
+class UrlIntergrationTest extends BaseIntegrationTest
 {
     /**
      * Get name of tested field tyoe
@@ -44,7 +43,7 @@ class UserIntergrationTest extends BaseIntegrationTest
      */
     public function getTypeName()
     {
-        return 'ezuser';
+        return 'ezurl';
     }
 
     /**
@@ -57,17 +56,17 @@ class UserIntergrationTest extends BaseIntegrationTest
         $handler = $this->getHandler();
 
         $handler->getStorageRegistry()->register(
-            'ezuser',
-            new FieldType\User\UserStorage(
+            'ezurl',
+            new FieldType\Url\UrlStorage(
                 $handler,
                 array(
-                    'LegacyStorage' => new FieldType\User\UserStorage\Gateway\LegacyStorage(),
+                    'LegacyStorage' => new FieldType\Url\UrlStorage\Gateway\LegacyStorage(),
                 )
             )
         );
         $handler->getFieldValueConverterRegistry()->register(
-            'ezuser',
-            new Legacy\Content\FieldValue\Converter\Null()
+            'ezurl',
+            new Legacy\Content\FieldValue\Converter\Url()
         );
 
         return $handler;
@@ -81,7 +80,7 @@ class UserIntergrationTest extends BaseIntegrationTest
      */
     public function getTypeConstraints()
     {
-        return new FieldTypeConstraints();
+        return new Content\FieldTypeConstraints();
     }
 
     /**
@@ -94,9 +93,9 @@ class UserIntergrationTest extends BaseIntegrationTest
     public function getFieldDefinitionData()
     {
         return array(
-            // The suer field type does not have any special field definition
+            // The ezurl field type does not have any special field definition
             // properties
-            array( 'fieldType', 'ezuser' ),
+            array( 'fieldType', 'ezurl' ),
             array( 'fieldTypeConstraints', new Content\FieldTypeConstraints() ),
         );
     }
@@ -108,13 +107,7 @@ class UserIntergrationTest extends BaseIntegrationTest
      */
     public function getInitialExternalFieldData()
     {
-        return array(
-            'account_key' => null,
-            'is_enabled'  => true,
-            'last_visit'  => null,
-            'login_count' => 0,
-            'max_login'   => 1000,
-        );
+        return 'http://example.com/sindelfingen';
     }
 
     /**
@@ -124,7 +117,10 @@ class UserIntergrationTest extends BaseIntegrationTest
      */
     public function getInitialFieldData()
     {
-        return null;
+        return array(
+            'urlId' => null,
+            'text' => 'Some awesome website',
+        );
     }
 
     /**
@@ -138,26 +134,19 @@ class UserIntergrationTest extends BaseIntegrationTest
      */
     public function assertLoadedFieldDataCorrect( Field $field )
     {
-        $expectedValues = array(
-            'account_key' => null,
-            'has_stored_login' => true,
-            'contentobject_id' => self::$contentId,
-            'login' => 'hans',
-            'email' => 'hans@example.com',
-            'password_hash' => '*',
-            'password_hash_type' => 0,
-            'is_logged_in' => true,
-            'is_enabled' => true,
-            'is_locked' => false,
-            'last_visit' => null,
-            'login_count' => null,
-            'max_login' => 1000,
+        $this->assertEquals(
+            $this->getInitialExternalFieldData(),
+            $field->value->externalData
         );
 
-        foreach ( $expectedValues as $key => $value )
-        {
-            $this->assertEquals( $value, $field->value->externalData[$key] );
-        }
+        $internalData = $this->getInitialFieldData();
+        $this->assertNotNull(
+            $field->value->data['urlId']
+        );
+        $this->assertEquals(
+            $internalData['text'],
+            $field->value->data['text']
+        );
     }
 
     /**
@@ -167,17 +156,7 @@ class UserIntergrationTest extends BaseIntegrationTest
      */
     public function getUpdateExternalFieldData()
     {
-        return array(
-            'account_key'        => 'foobar',
-            'login'              => 'change', // Change is intended to not get through
-            'email'              => 'change', // Change is intended to not get through
-            'password_hash'      => 'change', // Change is intended to not get through
-            'password_hash_type' => 'change', // Change is intended to not get through
-            'last_visit'         => 123456789,
-            'login_count'        => 2300,
-            'is_enabled'         => 'changed', // Change is intended to not get through
-            'max_login'          => 'changed', // Change is intended to not get through
-        );
+        return 'http://example.com/hubba';
     }
 
     /**
@@ -187,7 +166,10 @@ class UserIntergrationTest extends BaseIntegrationTest
      */
     public function getUpdateFieldData()
     {
-        return null;
+        return array(
+            'urlId' => null,
+            'text' => 'An even more awesome website'
+        );
     }
 
     /**
@@ -204,51 +186,19 @@ class UserIntergrationTest extends BaseIntegrationTest
      */
     public function assertUpdatedFieldDataCorrect( Field $field )
     {
-        $expectedValues = array(
-            'account_key' => 'foobar',
-            'has_stored_login' => true,
-            'contentobject_id' => self::$contentId,
-            'login' => 'hans',
-            'email' => 'hans@example.com',
-            'password_hash' => '*',
-            'password_hash_type' => 0,
-            'is_logged_in' => true,
-            'is_enabled' => true,
-            'is_locked' => true,
-            'last_visit' => 123456789,
-            'login_count' => 2300,
-            'max_login' => 1000,
+        $this->assertEquals(
+            $this->getUpdateExternalFieldData(),
+            $field->value->externalData
         );
 
-        foreach ( $expectedValues as $key => $value )
-        {
-            $this->assertEquals( $value, $field->value->externalData[$key] );
-        }
-    }
-
-    /**
-     * Method called after content creation
-     *
-     * Useful, if additional stuff should be executed (like creating the actual
-     * user).
-     *
-     * @param Legacy\Handler $handler
-     * @param Content $content
-     * @return void
-     */
-    public function postCreationHook( Legacy\Handler $handler, Content $content )
-    {
-        $user = new User();
-        $user->id            = $content->contentInfo->id;
-        $user->login         = 'hans';
-        $user->email         = 'hans@example.com';
-        $user->passwordHash  = '*';
-        $user->hashAlgorithm = 0;
-        $user->isEnabled     = true;
-        $user->maxLogin      = 1000;
-
-        $userHandler = $handler->userHandler();
-        $userHandler->create( $user );
+        $internalData = $this->getUpdateFieldData();
+        $this->assertNotNull(
+            $field->value->data['urlId']
+        );
+        $this->assertEquals(
+            $internalData['text'],
+            $field->value->data['text']
+        );
     }
 }
 
