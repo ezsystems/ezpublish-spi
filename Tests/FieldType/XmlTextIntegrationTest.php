@@ -1,6 +1,6 @@
 <?php
 /**
- * File contains: eZ\Publish\SPI\Tests\FieldType\IntegerIntegrationTest class
+ * File contains: eZ\Publish\SPI\Tests\FieldType\XmlTextIntergrationTest class
  *
  * @copyright Copyright (C) 1999-2012 eZ Systems AS. All rights reserved.
  * @license http://www.gnu.org/licenses/gpl-2.0.txt GNU General Public License v2
@@ -8,9 +8,11 @@
  */
 
 namespace eZ\Publish\SPI\Tests\FieldType;
-use eZ\Publish\Core\Persistence\Legacy,
-    eZ\Publish\Core\FieldType,
-    eZ\Publish\SPI\Persistence\Content;
+use eZ\Publish\Core\Persistence\Legacy\Content\FieldValue\Converter\XmlText as XmlTextConverter,
+    eZ\Publish\Core\FieldType\NullStorage,
+    eZ\Publish\Core\FieldType\FieldSettings,
+    eZ\Publish\SPI\Persistence\Content\FieldValue,
+    eZ\Publish\SPI\Persistence\Content\FieldTypeConstraints;
 
 /**
  * Integration test for legacy storage field types
@@ -32,7 +34,7 @@ use eZ\Publish\Core\Persistence\Legacy,
  *
  * @group integration
  */
-class IntegerIntegrationTest extends BaseIntegrationTest
+class XmlTextIntergrationTest extends BaseIntegrationTest
 {
     /**
      * Get name of tested field tyoe
@@ -41,7 +43,7 @@ class IntegerIntegrationTest extends BaseIntegrationTest
      */
     public function getTypeName()
     {
-        return 'ezint';
+        return 'ezxmltext';
     }
 
     /**
@@ -54,12 +56,12 @@ class IntegerIntegrationTest extends BaseIntegrationTest
         $handler = $this->getHandler();
 
         $handler->getStorageRegistry()->register(
-            'ezint',
-            new FieldType\NullStorage()
+            'ezxmltext',
+            new NullStorage()
         );
         $handler->getFieldValueConverterRegistry()->register(
-            'ezint',
-            new Legacy\Content\FieldValue\Converter\Integer()
+            'ezxmltext',
+            new XmlTextConverter()
         );
 
         return $handler;
@@ -73,7 +75,7 @@ class IntegerIntegrationTest extends BaseIntegrationTest
      */
     public function getTypeConstraints()
     {
-        return new Content\FieldTypeConstraints();
+        return new FieldTypeConstraints();
     }
 
     /**
@@ -86,17 +88,22 @@ class IntegerIntegrationTest extends BaseIntegrationTest
     public function getFieldDefinitionData()
     {
         return array(
-            // The ezint field type does not have any special field definition
+            // The ezxmltext field type does not have any special field definition
             // properties
-            array( 'fieldType', 'ezint' ),
-            array( 'fieldTypeConstraints', new Content\FieldTypeConstraints( array(
-                'validators' => array(
-                    'IntegerValueValidator' => array(
-                        'minIntegerValue' => false,
-                        'maxIntegerValue' => false,
-                    ),
-                ),
-            ) ) ),
+            array( 'fieldType', 'ezxmltext' ),
+            array(
+                'fieldTypeConstraints',
+                new FieldTypeConstraints(
+                    array(
+                        'fieldSettings' => new FieldSettings(
+                            array(
+                                'numRows' => 0,
+                                'tagPreset' => null,
+                            )
+                        )
+                    )
+                )
+            ),
         );
     }
 
@@ -107,11 +114,13 @@ class IntegerIntegrationTest extends BaseIntegrationTest
      */
     public function getInitialValue()
     {
-        return new Content\FieldValue( array(
-            'data'         => 42,
-            'externalData' => null,
-            'sortKey'      => 42,
-        ) );
+        return new FieldValue(
+            array(
+                'data' => '<?xml version="1.0" encoding="utf-8"?><section xmlns:image="http://ez.no/namespaces/ezpublish3/image/" xmlns:xhtml="http://ez.no/namespaces/ezpublish3/xhtml/" xmlns:custom="http://ez.no/namespaces/ezpublish3/custom/"><paragraph>Paragraph content…</paragraph></section>',
+                'externalData' => null,
+                'sortKey' => null,
+            )
+        );
     }
 
     /**
@@ -123,11 +132,13 @@ class IntegerIntegrationTest extends BaseIntegrationTest
      */
     public function getUpdatedValue()
     {
-        return new Content\FieldValue( array(
-            'data'         => 23,
-            'externalData' => null,
-            'sortKey'      => 23,
-        ) );
+        return new FieldValue(
+            array(
+                'data' => '<?xml version="1.0" encoding="utf-8"?><section xmlns:image="http://ez.no/namespaces/ezpublish3/image/" xmlns:xhtml="http://ez.no/namespaces/ezpublish3/xhtml/" xmlns:custom="http://ez.no/namespaces/ezpublish3/custom/"><paragraph>Some different content…</paragraph></section>',
+                'externalData' => null,
+                'sortKey' => null,
+            )
+        );
     }
 }
 

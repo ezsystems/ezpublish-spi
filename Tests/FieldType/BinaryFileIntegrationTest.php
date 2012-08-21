@@ -1,6 +1,6 @@
 <?php
 /**
- * File contains: eZ\Publish\SPI\Tests\FieldType\ImageIntegrationTest class
+ * File contains: eZ\Publish\Core\Persistence\Legacy\Tests\HandlerTest class
  *
  * @copyright Copyright (C) 1999-2012 eZ Systems AS. All rights reserved.
  * @license http://www.gnu.org/licenses/gpl-2.0.txt GNU General Public License v2
@@ -11,7 +11,8 @@ namespace eZ\Publish\SPI\Tests\FieldType;
 use eZ\Publish\Core\Persistence\Legacy,
     eZ\Publish\Core\FieldType,
     eZ\Publish\SPI\Persistence\Content,
-    eZ\Publish\SPI\Persistence\Content\Field;
+    eZ\Publish\SPI\Persistence\Content\Field,
+    eZ\Publish\SPI\Persistence\Content\FieldTypeConstraints;
 
 /**
  * Integration test for legacy storage field types
@@ -33,7 +34,7 @@ use eZ\Publish\Core\Persistence\Legacy,
  *
  * @group integration
  */
-class ImageIntergrationTest extends FileBaseIntegrationTest
+class BinaryFileIntergrationTest extends FileBaseIntegrationTest
 {
     /**
      * Returns the storage dir used by the file service
@@ -42,7 +43,7 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
      */
     protected function getStorageDir()
     {
-        return '';
+        return 'var/files';
     }
 
     /**
@@ -52,7 +53,7 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
      */
     protected function getStorageIdentifierPrefix()
     {
-        return'var/my_site/storage/images';
+        return '';
     }
 
     /**
@@ -62,7 +63,7 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
      */
     public function getTypeName()
     {
-        return 'ezimage';
+        return 'ezbinaryfile';
     }
 
     /**
@@ -75,18 +76,18 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
         $handler = $this->getHandler();
 
         $handler->getStorageRegistry()->register(
-            'ezimage',
-            new FieldType\Image\ImageStorage(
+            'ezbinaryfile',
+            new FieldType\BinaryFile\BinaryFileStorage(
                 array(
-                    'LegacyStorage' => new FieldType\Image\ImageStorage\Gateway\LegacyStorage(),
+                    'LegacyStorage' => new FieldType\BinaryFile\BinaryFileStorage\Gateway\LegacyStorage(),
                 ),
                 $this->getFileService(),
-                new FieldType\Image\PathGenerator\LegacyPathGenerator()
+                new FieldType\BinaryBase\PathGenerator\LegacyPathGenerator()
             )
         );
         $handler->getFieldValueConverterRegistry()->register(
-            'ezimage',
-            new Legacy\Content\FieldValue\Converter\Image()
+            'ezbinaryfile',
+            new Legacy\Content\FieldValue\Converter\BinaryFile()
         );
 
         return $handler;
@@ -100,7 +101,7 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
      */
     public function getTypeConstraints()
     {
-        return new Content\FieldTypeConstraints(
+        return new FieldTypeConstraints(
             array(
                 'validators' => array(
                     'FileSizeValidator' => array(
@@ -123,10 +124,10 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
         return array(
             // The ezint field type does not have any special field definition
             // properties
-            array( 'fieldType', 'ezimage' ),
+            array( 'fieldType', 'ezbinaryfile' ),
             array(
                 'fieldTypeConstraints',
-                new Content\FieldTypeConstraints(
+                new FieldTypeConstraints(
                     array(
                         'validators' => array(
                             'FileSizeValidator' => array(
@@ -149,9 +150,11 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
         return new Content\FieldValue( array(
             'data'         => null,
             'externalData' => array(
-                'path' => __DIR__ . '/_fixtures/image.jpg',
-                'fileName' => 'Ice-Flower.jpg',
-                'alternativeText' => 'An icy flower.',
+                'path' => ( $path = __DIR__ . '/_fixtures/image.jpg' ),
+                'fileName' => 'Ice-Flower-Binary.jpg',
+                'fileSize' => filesize( $path ),
+                'mimeType' => 'image/jpeg',
+                'downloadCount' => 0,
             ),
             'sortKey'      => '',
         ) );
@@ -168,17 +171,18 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
      */
     public function assertLoadedFieldDataCorrect( Field $field )
     {
-        $this->assertNotNull( $field->value->data );
+        $this->assertNotNull( $field->value->externalData );
 
         $this->assertTrue(
-            file_exists( $this->getTempDir() . '/' . $field->value->data['path'] )
+            file_exists( ( $path = $this->getTempDir() . '/' . $this->getStorageDir() . '/' . $field->value->externalData['path'] ) )
         );
 
-        $this->assertEquals( 'Ice-Flower.jpg', $field->value->data['fileName'] );
+        $this->assertEquals( 'Ice-Flower-Binary.jpg', $field->value->externalData['fileName'] );
+        $this->assertEquals( filesize( $path ), $field->value->externalData['fileSize'] );
+        $this->assertEquals( 'image/jpeg', $field->value->externalData['mimeType'] );
+        $this->assertEquals( 0, $field->value->externalData['downloadCount'] );
 
-        $this->assertEquals( 'An icy flower.', $field->value->data['alternativeText'] );
-
-        $this->assertNull( $field->value->externalData );
+        $this->assertNull( $field->value->data );
     }
 
     /**
@@ -193,9 +197,11 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
         return new Content\FieldValue( array(
             'data'         => null,
             'externalData' => array(
-                'path' => __DIR__ . '/_fixtures/image.png',
-                'fileName' => 'Blueish-Blue.jpg',
-                'alternativeText' => 'This blue is so blueish.',
+                'path' => ( $path = __DIR__ . '/_fixtures/image.png' ),
+                'fileName' => 'Blueish-Blue-Binary.jpg',
+                'fileSize' => filesize( $path ),
+                'mimeType' => 'image/png',
+                'downloadCount' => 23,
             ),
             'sortKey'      => '',
         ) );
@@ -215,24 +221,24 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
      */
     public function assertUpdatedFieldDataCorrect( Field $field )
     {
-        $this->assertNotNull( $field->value->data );
+        $this->assertNotNull( $field->value->externalData );
 
         $this->assertTrue(
-            file_exists( ( $filePath = $this->getTempDir() . '/' . $field->value->data['path'] ) )
+            file_exists( ( $filePath = $this->getTempDir() . '/' . $this->getStorageDir() . '/' . $field->value->externalData['path'] ) )
         );
 
-        // Check old files not removed before update
-        // need to stay there for reference integrity
+        // Check old file removed before update
         $this->assertEquals(
-            2,
+            1,
             count( glob( dirname( $filePath ) . '/*' ) )
         );
 
-        $this->assertEquals( 'Blueish-Blue.jpg', $field->value->data['fileName'] );
+        $this->assertEquals( 'Blueish-Blue-Binary.jpg', $field->value->externalData['fileName'] );
+        $this->assertEquals( filesize( $filePath ), $field->value->externalData['fileSize'] );
+        $this->assertEquals( 'image/png', $field->value->externalData['mimeType'] );
+        $this->assertEquals( 23, $field->value->externalData['downloadCount'] );
 
-        $this->assertEquals( 'This blue is so blueish.', $field->value->data['alternativeText'] );
-
-        $this->assertNull( $field->value->externalData );
+        $this->assertNull( $field->value->data );
     }
 
     /**
@@ -268,9 +274,9 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
     }
 
     /**
-     * @dep_ends \eZ\Publish\SPI\Tests\FieldType\ImageIntergrationTest::testCreateContentType
+     * @dep_ends \eZ\Publish\SPI\Tests\FieldType\BinaryFileIntergrationTest::testCreateContentType
      */
-    public function testImagesNotDeletedIfReferencesStillExist()
+    public function testBinaryFilesNotDeletedIfReferencesStillExist()
     {
         $contentType = $this->createContentType();
 
@@ -300,24 +306,22 @@ class ImageIntergrationTest extends FileBaseIntegrationTest
         }
 
         $this->assertNotEquals(
-            $firstField->value->data['fieldId'],
-            $secondField->value->data['fieldId']
+            $firstField->id,
+            $secondField->id
         );
-        unset( $firstField->value->data['fieldId'] );
-        unset( $secondField->value->data['fieldId'] );
 
         $this->assertEquals( $firstField->value, $secondField->value );
 
         $this->deleteContent( $firstContent );
 
         $this->assertTrue(
-            file_exists( $this->getTempDir() . '/' . $secondField->value->data['path'] )
+            file_exists( $this->getTempDir() . '/' . $this->getStorageDir() . '/' . $secondField->value->externalData['path'] )
         );
 
         $this->deleteContent( $secondContent );
 
         $this->assertFalse(
-            file_exists( $this->getTempDir() . '/' . $secondField->value->data['path'] )
+            file_exists( $this->getTempDir() . '/' . $this->getStorageDir() . '/' . $secondField->value->externalData['path'] )
         );
     }
 }
