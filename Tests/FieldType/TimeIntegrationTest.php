@@ -1,6 +1,6 @@
 <?php
 /**
- * File contains: eZ\Publish\Core\Persistence\Legacy\Tests\HandlerTest class
+ * File contains TimeIntegrationTest class
  *
  * @copyright Copyright (C) 1999-2013 eZ Systems AS. All rights reserved.
  * @license http://www.gnu.org/licenses/gpl-2.0.txt GNU General Public License v2
@@ -33,7 +33,7 @@ use eZ\Publish\SPI\Persistence\Content;
  *
  * @group integration
  */
-class DateAndTimeIntegrationTest extends BaseIntegrationTest
+class TimeIntegrationTest extends BaseIntegrationTest
 {
     /**
      * Get name of tested field type
@@ -42,29 +42,29 @@ class DateAndTimeIntegrationTest extends BaseIntegrationTest
      */
     public function getTypeName()
     {
-        return 'ezdatetime';
+        return 'eztime';
     }
 
     /**
      * Get handler with required custom field types registered
      *
-     * @return Handler
+     * @return \eZ\Publish\Core\Persistence\Legacy\Handler
      */
     public function getCustomHandler()
     {
         $handler = $this->getHandler();
 
         $handler->getFieldTypeRegistry()->register(
-            'ezdatetime',
-            new FieldType\DateAndTime\Type()
+            'eztime',
+            new FieldType\Time\Type()
         );
         $handler->getStorageRegistry()->register(
-            'ezdatetime',
+            'eztime',
             new FieldType\NullStorage()
         );
         $handler->getFieldValueConverterRegistry()->register(
-            'ezdatetime',
-            new Legacy\Content\FieldValue\Converter\DateAndTime()
+            'eztime',
+            new Legacy\Content\FieldValue\Converter\Time()
         );
 
         return $handler;
@@ -91,9 +91,9 @@ class DateAndTimeIntegrationTest extends BaseIntegrationTest
     public function getFieldDefinitionData()
     {
         return array(
-            // The ezdatetime field type does not have any special field definition
+            // The eztime field type does not have any special field definition
             // properties
-            array( 'fieldType', 'ezdatetime' ),
+            array( 'fieldType', 'eztime' ),
             array(
                 'fieldTypeConstraints',
                 new Content\FieldTypeConstraints(
@@ -101,8 +101,7 @@ class DateAndTimeIntegrationTest extends BaseIntegrationTest
                         'fieldSettings' => new FieldType\FieldSettings(
                             array(
                                 'defaultType'  => 0,
-                                'useSeconds'   => false,
-                                'dateInterval' => null,
+                                'useSeconds'   => false
                             )
                         ),
                     )
@@ -120,12 +119,9 @@ class DateAndTimeIntegrationTest extends BaseIntegrationTest
     {
         return new Content\FieldValue(
             array(
-                'data'         => array(
-                    'timestamp' => 123456,
-                    'rfc850'    => null,
-                ),
+                'data' => 3661,
                 'externalData' => null,
-                'sortKey'      => 42,
+                'sortKey' => 42,
             )
         );
     }
@@ -141,12 +137,9 @@ class DateAndTimeIntegrationTest extends BaseIntegrationTest
     {
         return new Content\FieldValue(
             array(
-                'data'         => array(
-                    'timestamp' => 12345678,
-                    'rfc850'    => null,
-                ),
+                'data' => 7322,
                 'externalData' => null,
-                'sortKey'      => 23,
+                'sortKey' => 23,
             )
         );
     }
