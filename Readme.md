@@ -1,4 +1,4 @@
-# eZ Publish 5.x API
+# eZ Publish 5.x SPI
 
 This package is a split of the [eZ Publish 5](https://github.com/ezsystems/ezpublish-kernel) SPI (persistence interfaces).
 
@@ -10,7 +10,7 @@ The repository is read-only, automatically updated from https://github.com/ezsys
 Refer to the [main project's README.md](https://github.com/ezsystems/ezpublish-kernel/blob/master/Readme.md)
 for further information.
 
-## Requiring ezpublish-api in your project
+## Requiring ezpublish-spi in your project
 ```yaml
 "require": {
   "ezsystems/ezpublish-spi": "~5.0"
